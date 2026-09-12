@@ -22,7 +22,6 @@ import static com.ysh.util.pdf.exporter.PdfDrawer.*;
 final class Page4Drawer {
 
     // 版式常量（L/R/FS/FS_*/MIN_Y/CONT_TOP/页眉页脚）统一放 PdfDrawer；此处只留本页特有
-    private static final float HEAD_H = 33f;         // 表 2 表头带高度
     private static final float T1_HEAD_H = 35f;      // 表 1 表头带高度
     private static final float T1_ROW_H = 29f;       // 表 1 基础行高
     private static final float T2_ROW_H = 31f;       // 表 2 基础行高（子行）
@@ -38,9 +37,9 @@ final class Page4Drawer {
     /** 表 2 每个场站固定 3 个机构类型子行 */
     private static final String[] T2_TYPES = {"普通机构", "运营商机构", "泰达电力机构"};
 
-    /** 表 2 表头（首列"场站名称 / 编号"另画两行） */
+    /** 表 2 表头（首列"场站名称 / 编号"显式换行；带高按各列折行数撑开，不写死） */
     private static final String[] T2_HEADERS = {
-            "机构用户类型", "电费收入", "服务费收入", "充电消费收入", "占位费收入", "消费收入合计"
+            "场站名称\n/ 编号", "机构用户类型", "电费收入", "服务费收入", "充电消费收入", "占位费收入", "消费收入合计"
     };
 
     private Page4Drawer() {
@@ -187,7 +186,7 @@ final class Page4Drawer {
             float groupH = groupHeight(g, font, w);
             if (y - groupH < MIN_Y) {
                 page = newContPage(pdf, font, boldFont, settlementNo, xs);
-                y = CONT_TOP - 10f - HEAD_H;
+                y = CONT_TOP - 10f - headerBandHeight(boldFont, xs);
             }
 
             vLines(page, xs, y - groupH, y);
@@ -195,10 +194,18 @@ final class Page4Drawer {
             // 场站名：纵跨整组垂直居中
             drawCellText(page, font, xs[0] + 6f, y, groupH, w[0], g.station, FS, T2_ROW_H);
 
-            // 3 个子行：行高按各自折行数撑开
+            // 3 个子行：组内富余高度平均摊到三行（三个格子等高），且每行不低于自身折行所需高度
+            float[] needH = new float[3];
+            float need = 0f;
+            for (int i = 0; i < 3; i++) {
+                needH[i] = rowHeight(g, i, font, w);
+                need += needH[i];
+            }
+            float extra = (groupH - need) / 3f;
+
             float yy = y;
             for (int i = 0; i < 3; i++) {
-                float rh = rowHeight(g, i, font, w);
+                float rh = needH[i] + extra;
                 drawCellText(page, font, xs[1] + 6f, yy, rh, w[1], T2_TYPES[i], FS, T2_ROW_H);
                 drawCellText(page, font, xs[2] + 4f, yy, rh, w[2], at(g.elecFee, i), FS, T2_ROW_H);
                 drawCellText(page, font, xs[3] + 4f, yy, rh, w[3], at(g.servFee, i), FS, T2_ROW_H);
@@ -216,7 +223,7 @@ final class Page4Drawer {
         float trh = totalRowHeight(total, boldFont, w);
         if (y - trh < MIN_Y) {
             page = newContPage(pdf, font, boldFont, settlementNo, xs);
-            y = CONT_TOP - 10f - HEAD_H;
+            y = CONT_TOP - 10f - headerBandHeight(boldFont, xs);
         }
         hLineBold(page, L, R, y);
         drawCellText(page, boldFont, xs[0] + 6f, y, trh, w[0], "合计", FS, T2_ROW_H);
@@ -230,11 +237,15 @@ final class Page4Drawer {
         return y - trh;
     }
 
-    /** 一个场站组高度 = 3 个子行高度之和（子行折行时更高）。 */
+    /**
+     * 一个场站组高度 = max(3 个子行高度之和, 场站名列折行高度)。
+     * 场站名纵跨整组，名字过长时必须把组撑高，否则文字会溢到表头带和下一组上。
+     */
     private static float groupHeight(Page4Table2Group g, PdfFont font, float[] w) {
         float h = 0;
         for (int i = 0; i < 3; i++) h += rowHeight(g, i, font, w);
-        return h;
+        float stationH = rowLines(font, FS, new float[]{w[0]}, g.station) * T2_ROW_H;
+        return Math.max(h, stationH);
     }
 
     /** 场站组第 i 子行高度 = 该子行各格折行后的最大行数 × T2_ROW_H。 */
@@ -271,17 +282,20 @@ final class Page4Drawer {
         return page;
     }
 
-    /** 画表 2 表头带，返回底线 y */
+    /** 表 2 表头带高度：按各列折行数撑开（首列两行 → 2×T2_ROW_H）；续页布置首行时与 drawHeaderBand 保持一致。 */
+    private static float headerBandHeight(PdfFont boldFont, float[] xs) {
+        return rowLines(boldFont, FS, colWidths(xs), T2_HEADERS) * T2_ROW_H;
+    }
+
+    /** 画表 2 表头带（高度随折行数变化），返回底线 y */
     private static float drawHeaderBand(PdfPage page, PdfFont boldFont, float top, float[] xs) {
-        hLineBold(page, L, R, top);
-        // 首列固定两行；其余列表头支持 \n（表头带高度固定 HEAD_H）
-        drawText(page, boldFont, xs[0] + 6f, top - 13f, "场站名称", FS);
-        drawText(page, boldFont, xs[0] + 6f, top - 25f, "/ 编号", FS);
         float[] w = colWidths(xs);
+        float bandH = headerBandHeight(boldFont, xs);
+        hLineBold(page, L, R, top);
         for (int c = 0; c < T2_HEADERS.length; c++) {
-            drawCellText(page, boldFont, xs[c + 1] + 6f, top, HEAD_H, w[c + 1], T2_HEADERS[c], FS, T2_ROW_H);
+            drawCellText(page, boldFont, xs[c] + 6f, top, bandH, w[c], T2_HEADERS[c], FS, T2_ROW_H);
         }
-        float y = top - HEAD_H;
+        float y = top - bandH;
         hLine(page, L, R, y);
         vLines(page, xs, y, top);
         return y;

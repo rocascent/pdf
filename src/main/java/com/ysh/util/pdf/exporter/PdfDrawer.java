@@ -25,7 +25,6 @@ final class PdfDrawer {
     static final float CONT_TOP = 730f;        // 续页节标题基线
     static final float CELL_DROP = 3.15f;      // 单元格文本基线在行内的下移量
     static final float CELL_PAD = 8f;          // 单元格左内边距 + 右侧留白（折行可用宽度用）
-    static final int MAX_CELL_LINES = 5;       // 单元格最多折行数（超出截断加"…"，防止把表格撑破页面）
 
     // 页眉大标题区
     static final float HEAD_TOP_Y = 810f;      // "运营结算/金额单位"基线
@@ -219,26 +218,10 @@ final class PdfDrawer {
         return out;
     }
 
-    /**
-     * 单元格文本最终行：wrapLines 后按 MAX_CELL_LINES 截断，末行截到放得下再加"…"。
-     * （占位计费规则行不走这里：那个格子允许任意行数，靠整体下移避让。）
-     */
-    static List<String> wrapCellLines(String text, PdfFont font, float fontSize, float maxWidth) {
-        List<String> lines = wrapLines(text, font, fontSize, maxWidth);
-        if (lines.size() <= MAX_CELL_LINES) return lines;
-        List<String> out = new ArrayList<>(lines.subList(0, MAX_CELL_LINES));
-        String last = out.get(MAX_CELL_LINES - 1);
-        while (!last.isEmpty() && font.getWidth(last + "…", fontSize) > maxWidth) {
-            last = last.substring(0, last.offsetByCodePoints(0, last.codePointCount(0, last.length()) - 1));
-        }
-        out.set(MAX_CELL_LINES - 1, last + "…");
-        return out;
-    }
-
-    /** 单格折行后的行数（含截断）。 */
+    /** 单格折行后的行数（不截断，行高/组高据此撑开）。 */
     static int lineCount(String text, PdfFont font, float fontSize, float maxWidth) {
         if (text == null || text.isEmpty()) return 1;
-        return wrapCellLines(text, font, fontSize, maxWidth).size();
+        return wrapLines(text, font, fontSize, maxWidth).size();
     }
 
     /**
@@ -269,7 +252,7 @@ final class PdfDrawer {
     static void drawCellText(PdfPage page, PdfFont font, float x, float top, float h, float maxWidth,
                              String text, float fontSize, float lineH, float drop) {
         if (text == null || text.isEmpty()) return;
-        List<String> lines = wrapCellLines(text, font, fontSize, maxWidth);
+        List<String> lines = wrapLines(text, font, fontSize, maxWidth);
         float blockTop = top - (h - lines.size() * lineH) / 2f;
         for (int i = 0; i < lines.size(); i++) {
             drawText(page, font, x, blockTop - i * lineH - lineH / 2f - drop, lines.get(i), fontSize);

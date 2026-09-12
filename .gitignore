@@ -2,3 +2,10 @@
 build/
 .idea/
 .vscode/
+
+# macOS
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+__MACOSX/
