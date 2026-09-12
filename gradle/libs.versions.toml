@@ -1,0 +1,24 @@
+[versions]
+spring-boot = "4.1.1"
+itext = "7.2.6"
+mybatis = "4.0.1"
+sa-token = "1.46.0"
+
+[libraries]
+spring-boot-web = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-dev-tools = { module = "org.springframework.boot:spring-boot-devtools" }
+spring-boot-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+itext-kernel = { module = "com.itextpdf:kernel", version.ref = "itext" }
+itext-forms = { module = "com.itextpdf:forms", version.ref = "itext" }
+itext-layout = { module = "com.itextpdf:layout", version.ref = "itext" }
+itext-io = { module = "com.itextpdf:io", version.ref = "itext" }
+mybatis-spring-boot = { module = "org.mybatis.spring.boot:mybatis-spring-boot-starter", version.ref = "mybatis" }
+sa-token-starter = { module = "cn.dev33:sa-token-spring-boot4-starter", version.ref = "sa-token" }
+sa-token-redis = { module = "cn.dev33:sa-token-redis-template", version.ref = "sa-token" }
+dameng-jdbc = { module = "com.dameng:DmJdbcDriver18", version = "8.1.3.140" }
+ulid = { module = "io.azam.ulidj:ulidj", version = "2.0.0" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency = { id = "io.spring.dependency-management", version = "1.1.7" }

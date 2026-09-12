@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.dependency)
+}
+
+group = 'com.ysh.util'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Web 接口
+    implementation libs.spring.boot.web
+    implementation libs.spring.dev.tools
+
+    // PDF 解析与绘制：解析内容流（线段/文字）+ 按坐标画字 + AcroForm 表单域
+    implementation libs.itext.kernel
+    implementation libs.itext.forms
+    implementation libs.itext.layout
+    implementation libs.itext.io
+
+    implementation libs.mybatis.spring.boot
+
+    implementation libs.sa.token.starter
+    implementation libs.sa.token.redis
+    
+    runtimeOnly libs.dameng.jdbc
+
+    implementation libs.ulid
+
+    testImplementation libs.spring.boot.test
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ["-Xlint:deprecation"]
+}

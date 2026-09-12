@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    url: jdbc:dm://192.168.0.11:5237?schema=PWR_EVIDEV_MNGR&socketTimeout=60000&loginTimeout=5000&charSet=UTF-8
+    driver-class-name: dm.jdbc.driver.DmDriver
+    username: SYSDBA
+    password: SYSDBA

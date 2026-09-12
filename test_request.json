@@ -1,0 +1,105 @@
+{
+  "page1": {
+    "settlementNo": "JS202609-0001",
+    "period": "2026年09月",
+    "operatorName": "XX充电运营商",
+    "operatorCode": "OP001",
+    "settlerName": "XX结算方",
+    "issueDate": "2026-09-09",
+    "accountName": "XX充电运营商",
+    "bankName": "XX银行XX支行",
+    "accountNumber": "6222000000000000",
+    "amountWords": "壹万贰仟叁佰肆拾伍元陆角柒分",
+    "settlerHandler": "张三",
+    "settlerYear": "2026",
+    "settlerMonth": "09",
+    "settlerDay": "10",
+    "operatorHandler": "李四",
+    "operatorYear": "2026",
+    "operatorMonth": "09",
+    "operatorDay": "10",
+    "dianfeNet": "8000.00",
+    "dianfeIncome": "6400.00",
+    "fuwufeiNet": "5000.00",
+    "fuwufeiIncome": "4000.00",
+    "zhanweifeiNet": "2000.00",
+    "zhanweifeiIncome": "1600.00",
+    "totalNet": "15000.00",
+    "totalIncome": "12000.00",
+    "taidaCharge": "3000.00",
+    "taidaOccupy": "100.00",
+    "taidaTotal": "3100.00",
+    "operatorCharge": "2000.00",
+    "operatorOccupy": "80.00",
+    "operatorTotal": "2080.00",
+    "normalCharge": "1000.00",
+    "normalOccupy": "20.00",
+    "normalTotal": "1020.00",
+    "totalOrgCharge": "6000.00",
+    "totalOrgOccupy": "200.00",
+    "totalOrgIncome": "6200.00"
+  },
+  "page2": {
+    "operatorName": "XX充电运营商",
+    "period": "2026年09月",
+    "table1": [
+      {"label": "场站A / CZ001", "col1": "1000.00", "col2": "800.00", "col3": "100.00", "col4": "1900.00"},
+      {"label": "场站B / CZ002", "col1": "2000.00", "col2": "1600.00", "col3": "200.00", "col4": "3800.00"},
+      {"label": "合计", "col1": "3000.00", "col2": "2400.00", "col3": "300.00", "col4": "5700.00"}
+    ],
+    "table2": [
+      {"label": "场站A / CZ001", "col1": "2400.00", "col2": "1900.00", "col3": "500.00"},
+      {"label": "场站B / CZ002", "col1": "4800.00", "col2": "3800.00", "col3": "1000.00"},
+      {"label": "合计", "col1": "7200.00", "col2": "5700.00", "col3": "1500.00"}
+    ]
+  },
+  "page3": {
+    "operatorName": "XX充电运营商",
+    "period": "2026年09月",
+    "stationName": "场站A",
+    "stationCode": "CZ001",
+    "chargeRule": "首小时2元，之后每小时1元",
+    "table1": [
+      {"label": "费用金额", "col1": "5000.00", "col2": "3000.00", "col3": "1000.00", "col4": "9000.00"},
+      {"label": "减：优惠金额", "col1": "100.00", "col2": "50.00", "col3": "0.00", "col4": "150.00"},
+      {"label": "加：调整额", "col1": "0.00", "col2": "0.00", "col3": "0.00", "col4": "0.00"},
+      {"label": "可分配净额", "col1": "4820.00", "col2": "2900.00", "col3": "970.00", "col4": "8690.00"}
+    ],
+    "feeGroups": [
+      {"item": "电费", "netAmount": "4820.00", "party": ["场站A", "运营商"], "ratio": ["60%", "40%"], "income": ["2892.00", "1928.00"]},
+      {"item": "服务费", "netAmount": "2900.00", "party": ["场站A", "运营商"], "ratio": ["60%", "40%"], "income": ["1740.00", "1160.00"]},
+      {"item": "占位费", "netAmount": "970.00", "party": ["场站A", "运营商"], "ratio": ["60%", "40%"], "income": ["582.00", "388.00"]}
+    ],
+    "operatorIncome": "3476.00",
+    "totalIncome": "8690.00"
+  },
+  "page4": {
+    "operatorName": "XX充电运营商",
+    "period": "2026年09月",
+    "table1": [
+      {"label": "泰达电力机构", "col1": "100", "col2": "5000.00", "col3": "3000.00", "col4": "100.00", "col5": "3100.00"},
+      {"label": "运营商机构", "col1": "80", "col2": "4000.00", "col3": "2000.00", "col4": "80.00", "col5": "2080.00"},
+      {"label": "普通机构", "col1": "60", "col2": "3000.00", "col3": "1000.00", "col4": "20.00", "col5": "1020.00"},
+      {"label": "合计", "col1": "240", "col2": "12000.00", "col3": "6000.00", "col4": "200.00", "col5": "6200.00"}
+    ],
+    "table2": [
+      {
+        "station": "场站A",
+        "elecFee": ["500.00", "2000.00", "2500.00"],
+        "serviceFee": ["400.00", "1000.00", "1500.00"],
+        "consume": ["20.00", "300.00", "500.00"],
+        "parkFee": ["20.00", "30.00", "50.00"],
+        "total": ["940.00", "3330.00", "4550.00"]
+      },
+      {
+        "station": "场站B",
+        "elecFee": ["300.00", "1200.00", "1800.00"],
+        "serviceFee": ["200.00", "800.00", "900.00"],
+        "consume": ["10.00", "100.00", "200.00"],
+        "parkFee": ["10.00", "30.00", "50.00"],
+        "total": ["520.00", "2130.00", "2950.00"]
+      }
+    ],
+    "table2Total": ["8300.00", "4800.00", "1130.00", "190.00", "14420.00"]
+  }
+}
