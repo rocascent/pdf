@@ -1,6 +1,6 @@
 package com.ysh.util.pdf.dto;
 
-/** 第 3 页表 2"各方清分收入"：一个费用项目组（N 个清分方子行，渲染不足 2 行补空行）。 */
+/** 第 3 页表 2"各方清分收入"：一个费用项目组（N 个清分方子行，渲染时至少 1 行）。 */
 public class Page3Table2Group {
     public String item;          // 费用项目：电费/服务费/占位费
     public String netAmount;     // 可分配净额

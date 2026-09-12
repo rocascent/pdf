@@ -12,7 +12,7 @@ public class Page3Data implements PageData {
     public String chargeRule = DEFAULT_STRING;     // 占位计费规则
 
     public List<Page3Table1Row> table1;  // 一、线上可分配净额计算（固定 6 行，顺序即语义：电费/服务费/占位费/合计）
-    public List<Page3Table2Group> feeGroups;  // 二、各方清分收入（每个费用项目一组，子行数 = 清分方个数，不足 2 补空行）
+    public List<Page3Table2Group> feeGroups;  // 二、各方清分收入（每个费用项目一组，子行数 = 清分方个数，至少 1 行）
 
     public String operatorIncome = DEFAULT_STRING; // 本运营商线上清分收入
     public String totalIncome = DEFAULT_STRING;    // 各方线上清分收入合计

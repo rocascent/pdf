@@ -20,7 +20,7 @@ import static com.ysh.util.pdf.exporter.PdfDrawer.*;
  *   页 1    ：模板页 1 并入同一文档后填格（Page1Drawer）；
  *   页 2..N ：附件一整页自画（Page2Drawer），表格长则 Word 式延续多页；
  *   附件二  ：页 3 整页自画（Page3Drawer，表 2 组级换页可跨多页）；
- *   附件三  ：页 4 整页自画（Page4Drawer，表 2 补空组至 2 个，多场站组级换页可跨多页）；
+ *   附件三  ：页 4 整页自画（Page4Drawer，表 2 无场站数据时留 1 个空组，多场站组级换页可跨多页）；
  *   全部画完后页码统一回填（总页数此刻才确定）。
  */
 public class SettlementPdfExporter {

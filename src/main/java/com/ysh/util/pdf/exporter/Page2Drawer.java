@@ -23,7 +23,6 @@ final class Page2Drawer {
     private static final float ROW_H1 = 33f;        // 表 1 基础行高
     private static final float ROW_H2 = 29f;        // 表 2 基础行高
     private static final float NOTES_H = 57f;       // 表 2 下方 3 行注释块高度（换页判断用）
-    private static final int MIN_DATA_ROWS = 5;     // 数据行不足时补空行到该行数
 
     private Page2Drawer() {
     }
@@ -99,7 +98,7 @@ final class Page2Drawer {
 
     /**
      * 通用行表（表 1 / 表 2 共用）：表头带 + 数据行 + 合计行。
-     * 最后一行视为合计：首列固定画"合计"，其余列取该行数据；数据行不足 MIN_DATA_ROWS 补空行占位（只画格子）。
+     * 最后一行视为合计：首列固定画"合计"，其余列取该行数据；中间数据行有几行画几行，不补空行。
      * 列文本按列宽折行撑开行高，放不下换新页续写（带"（续）"节标题 + 表头带）。返回表底线 y。
      */
     private static <T> float drawRows(PdfDocument pdf, PdfFont font, PdfFont boldFont, PdfPage page,
@@ -114,20 +113,16 @@ final class Page2Drawer {
         float[] w = colWidths(xs);
         float y = drawHeaderBand(page, boldFont, fs, top, rowH, xs, header);
 
-        int totalIndex = rows.size() - 1;
-        int n = Math.max(totalIndex, MIN_DATA_ROWS);
+        int totalIndex = rows.size() - 1;      // 最后一行 = 合计
 
-        for (int i = 0; i < n; i++) {
-            T row = i < totalIndex ? rows.get(i) : null;
-            String[] cells = row == null ? null : toCells.cells(row);
-            float rh = cells == null ? rowH : rowLines(font, fs, w, cells) * rowH;
+        for (int i = 0; i < totalIndex; i++) {
+            String[] cells = toCells.cells(rows.get(i));
+            float rh = rowLines(font, fs, w, cells) * rowH;
             if (y - rh < MIN_Y) {
                 page = newContPage(pdf, font, boldFont, p, settlementNo, secTitle, fs, xs, header, rowH);
                 y = CONT_TOP - 10f - rowH;
             }
-            if (cells != null) {
-                drawCells(page, font, xs, w, y, rh, cells, fs, rowH);
-            }
+            drawCells(page, font, xs, w, y, rh, cells, fs, rowH);
             hLine(page, xs[0], right, y - rh);
             vLines(page, xs, y - rh, y);
             y -= rh;

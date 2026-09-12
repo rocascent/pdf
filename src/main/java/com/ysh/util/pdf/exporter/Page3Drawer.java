@@ -18,7 +18,7 @@ import static com.ysh.util.pdf.exporter.PdfDrawer.*;
  * 坐标与字号抄自 api_out_dump3.txt（与页 2 同源的实测基准）。
  *
  * 结构：抬头小表（两行）+ 占位计费规则行 + 表 1（核算项目，固定 6 行）
- * + 表 2（各方清分收入，每个费用项目一组、N 个清分方子行不足 2 补空行）+ 汇总两行 + 注释。
+ * + 表 2（各方清分收入，每个费用项目一组、N 个清分方子行，有几行画几行）+ 汇总两行 + 注释。
  * 表 2 组数与子行数可变：整组放不下当前页则换新页续写（组不可拆），Word 式延续，
  * 每页都带完整页眉页脚；汇总区固定跟在最后一个组之后。
  */
@@ -197,7 +197,7 @@ final class Page3Drawer {
     }
 
     /**
-     * 表 2：每个费用项目一组，组内子行数 = 清分方数据长度（不足 2 补空行，组高 N×ROW_H）。
+     * 表 2：每个费用项目一组，组内子行数 = 清分方数据长度（至少 1 行，不补空行，组高 N×ROW_H）。
      * 费用项目/可分配净额纵跨组内全部子行（组内分隔线只画 223~553）；
      * 整组放不下当前页则换新页续写（组不可拆）；组后接 8pt 间隙 + 汇总两行。
      * 返回汇总区底线 y。
@@ -328,13 +328,13 @@ final class Page3Drawer {
                 at(g.party, i), at(g.ratio, i), at(g.income, i)) * ROW_H;
     }
 
-    /** 组内子行数 = 三个数组最大长度，模板预留 2 行，不足补空行。 */
+    /** 组内子行数 = 三个数组最大长度，至少 1 行（保住费用项目/可分配净额），有几行画几行。 */
     private static int subRowCount(Page3Table2Group g) {
         int n = 0;
         if (g.party != null) n = Math.max(n, g.party.length);
         if (g.ratio != null) n = Math.max(n, g.ratio.length);
         if (g.income != null) n = Math.max(n, g.income.length);
-        return Math.max(n, 2);
+        return Math.max(n, 1);
     }
 
     /** 取数组第 i 个元素，越界/数组为 null 返回 null（画空白）。 */

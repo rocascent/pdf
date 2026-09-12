@@ -261,7 +261,7 @@ final class Page4Drawer {
         return rowLines(font, FS, new float[]{w[0], w[2], w[3], w[4], w[5], w[6]}, texts) * T2_ROW_H;
     }
 
-    /** 场站组不足 2 个补空组 */
+    /** 没有场站组时留 1 个空组（保住表格结构），有几组画几组。 */
     private static List<Page4Table2Group> padGroups(List<Page4Table2Group> groups) {
         List<Page4Table2Group> list = new ArrayList<>();
         if (groups != null) {
@@ -269,7 +269,7 @@ final class Page4Drawer {
                 if (g != null) list.add(g);
             }
         }
-        while (list.size() < 2) list.add(new Page4Table2Group());
+        if (list.isEmpty()) list.add(new Page4Table2Group());
         return list;
     }
 
