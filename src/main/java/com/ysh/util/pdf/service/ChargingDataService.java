@@ -1,5 +1,6 @@
 package com.ysh.util.pdf.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -87,7 +88,10 @@ public class ChargingDataService {
         var p2 = new Page2Data();
         p2.operatorName = data.page1.operatorName;
         p2.period = data.page1.period;
-        p2.table1 = List.of(new Page2Table1Row("111", "222", "3", "4", "5"));
+        p2.table1 = List.of(
+                new Page2Table1Row("1", "2", "3", "4", "5"),
+                new Page2Table1Row("6", "7", "8", "9", "0")
+        );
         data.page2 = p2;
     }
 
@@ -113,6 +117,7 @@ public class ChargingDataService {
                         entData.normalTotal().add(entData.operatorTotal()).add(entData.tedaTotal()).toPlainString())
         );
         var stationData = databaseMapper.getStationEntIncomeData(startTime.atStartOfDay(), endTime.atStartOfDay());
+        var total = new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
         p4.table2 = stationData.stream().map(d -> {
             var group = new Page4Table2Group();
             group.station = d.name();
@@ -126,12 +131,35 @@ public class ChargingDataService {
                     d.operatorServMoney().toPlainString(),
                     d.tedaServMoney().toPlainString(),
             };
-            group.consume = new String[]{};
-            group.tmoutFee = new String[]{};
-            group.total = new String[]{};
+            group.consume = new String[]{
+                    d.normalCharge().toPlainString(),
+                    d.operatorCharge().toPlainString(),
+                    d.tedaCharge().toPlainString(),
+            };
+            group.tmoutFee = new String[]{
+                    d.normalTmoutMoney().toPlainString(),
+                    d.operatorTmoutMoney().toPlainString(),
+                    d.tedaTmoutMoney().toPlainString(),
+            };
+            group.total = new String[]{
+                    d.normalTotal().toPlainString(),
+                    d.operatorTotal().toPlainString(),
+                    d.tedaTotal().toPlainString(),
+            };
+            total[0] = total[0].add(d.normalElecMoney()).add(d.operatorElecMoney()).add(d.tedaElecMoney());
+            total[1] = total[1].add(d.normalServMoney()).add(d.operatorServMoney()).add(d.tedaServMoney());
+            total[2] = total[2].add(d.normalCharge()).add(d.operatorCharge()).add(d.tedaCharge());
+            total[3] = total[3].add(d.normalTmoutMoney()).add(d.operatorTmoutMoney()).add(d.tedaTmoutMoney());
+            total[4] = total[4].add(d.normalTotal()).add(d.operatorTotal()).add(d.tedaTotal());
             return group;
         }).toList();
-
+        p4.table2Total = new String[]{
+                total[0].toPlainString(),
+                total[1].toPlainString(),
+                total[2].toPlainString(),
+                total[3].toPlainString(),
+                total[4].toPlainString()
+        };
         data.page4 = p4;
     }
 }
