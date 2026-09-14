@@ -75,7 +75,7 @@ final class Page3Drawer {
         float t2 = y - 17f - 26f;
         float[] x2 = {L, 115f, 223f, 367f, 442f, R};
         String[] h2 = {"费用项目", "可分配净额", "清分方名称", "清分比例", "清分收入"};
-        y = drawTable2(pdf, font, boldFont, page, p.feeGroups, p.totalIncome, p.operatorIncome,
+        y = drawTable2(pdf, font, boldFont, page, p.table2, p.totalIncome, p.operatorIncome,
                 t2, x2, h2, settlementNo);
         page = pdf.getLastPage();          // 表 2 可能内部换过页，注释必须跟到最后一页
 
@@ -232,17 +232,17 @@ final class Page3Drawer {
                 vLines(page, xs, y - groupH, y);
 
                 // 费用项目 / 可分配净额：纵跨整组垂直居中
-                drawCellText(page, font, xs[0] + 6f, y, groupH, w[0], g.item, FS, ROW_H);
-                drawCellText(page, font, xs[1] + 4f, y, groupH, w[1], g.netAmount, FS, ROW_H);
+                drawCellText(page, font, xs[0] + 6f, y, groupH, w[0], g.item(), FS, ROW_H);
+                drawCellText(page, font, xs[1] + 4f, y, groupH, w[1], g.clrAmount(), FS, ROW_H);
 
                 // 子行 0..subRows-1（行高按各自折行数；组内分隔线只画 223~553，不横穿费用项目/净额列）
                 int subRows = subRowCount(g);
                 float yy = y;
                 for (int i = 0; i < subRows; i++) {
                     float rh = subRowHeight(g, i, font, w);
-                    drawCellText(page, font, xs[2] + 4f, yy, rh, w[2], at(g.party, i), FS, ROW_H);
-                    drawCellText(page, font, xs[3] + 4f, yy, rh, w[3], at(g.ratio, i), FS, ROW_H);
-                    drawCellText(page, font, xs[4] + 4f, yy, rh, w[4], at(g.income, i), FS, ROW_H);
+                    drawCellText(page, font, xs[2] + 4f, yy, rh, w[2], at(g.party(), i), FS, ROW_H);
+                    drawCellText(page, font, xs[3] + 4f, yy, rh, w[3], at(g.ratio(), i), FS, ROW_H);
+                    drawCellText(page, font, xs[4] + 4f, yy, rh, w[4], at(g.income(), i), FS, ROW_H);
                     yy -= rh;
                     if (i < subRows - 1) {
                         hLine(page, xs[2], right, yy);
@@ -325,15 +325,15 @@ final class Page3Drawer {
     /** 子行 i 的高度 = 该子行各格折行后的最大行数 × ROW_H。 */
     private static float subRowHeight(Page3Table2Group g, int i, PdfFont font, float[] w) {
         return rowLines(font, FS, new float[]{w[2], w[3], w[4]},
-                at(g.party, i), at(g.ratio, i), at(g.income, i)) * ROW_H;
+                at(g.party(), i), at(g.ratio(), i), at(g.income(), i)) * ROW_H;
     }
 
     /** 组内子行数 = 三个数组最大长度，至少 1 行（保住费用项目/可分配净额），有几行画几行。 */
     private static int subRowCount(Page3Table2Group g) {
         int n = 0;
-        if (g.party != null) n = Math.max(n, g.party.length);
-        if (g.ratio != null) n = Math.max(n, g.ratio.length);
-        if (g.income != null) n = Math.max(n, g.income.length);
+        if (g.party() != null) n = Math.max(n, g.party().length);
+        if (g.ratio() != null) n = Math.max(n, g.ratio().length);
+        if (g.income() != null) n = Math.max(n, g.income().length);
         return Math.max(n, 1);
     }
 

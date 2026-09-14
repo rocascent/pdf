@@ -4,3 +4,7 @@ spring:
     driver-class-name: dm.jdbc.driver.DmDriver
     username: SYSDBA
     password: SYSDBA
+
+logging:
+  file:
+    name: logs/pdf.log

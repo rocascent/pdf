@@ -4,7 +4,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.ysh.util.pdf.dto.*;
 import com.ysh.util.pdf.util.ChineseAmountUtil;
@@ -24,6 +28,7 @@ public class ChargingDataService {
         var data = new ExportData();
         getPage1Data(data, tenantId, startTime, endTime);
         getPage2Data(data, tenantId, startTime, endTime);
+        getPage3Data(data, tenantId, startTime, endTime);
         getPage4Data(data, tenantId, startTime, endTime);
         return data;
     }
@@ -88,11 +93,128 @@ public class ChargingDataService {
         var p2 = new Page2Data();
         p2.operatorName = data.page1.operatorName;
         p2.period = data.page1.period;
-        p2.table1 = List.of(
-                new Page2Table1Row("1", "2", "3", "4", "5"),
-                new Page2Table1Row("6", "7", "8", "9", "0")
-        );
+        var stationClrData = databaseMapper.getStationClrData(tenantId, startTime, endTime);
+        p2.table1 = new ArrayList<>(stationClrData.size() + 1);
+        if (!stationClrData.isEmpty()) {
+            var total = new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
+            stationClrData.forEach(d -> {
+                var row = new Page2Table1Row(
+                        d.name(), d.clrElecFee().toPlainString(), d.clrServFee().toPlainString(), d.clrTmoutFee().toPlainString(),
+                        d.clrElecFee().add(d.clrServFee()).add(d.clrTmoutFee()).toPlainString()
+                );
+                total[0] = total[0].add(d.clrElecFee());
+                total[1] = total[1].add(d.clrServFee());
+                total[2] = total[2].add(d.clrTmoutFee());
+                total[3] = total[3].add(d.clrElecFee().add(d.clrServFee()).add(d.clrTmoutFee()));
+                p2.table1.add(row);
+            });
+            p2.table1.add(new Page2Table1Row(
+                    "合计",
+                    total[0].toPlainString(),
+                    total[1].toPlainString(),
+                    total[2].toPlainString(),
+                    total[3].toPlainString()
+            ));
+        }
+        var totalClrData = databaseMapper.getStationTotalClrData(tenantId, startTime, endTime);
+        p2.table2 = new ArrayList<>(totalClrData.size() + 1);
+        if (!totalClrData.isEmpty()) {
+            var total = new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
+            totalClrData.forEach(d -> {
+                var row = new Page2Table2Row(
+                        d.name(),
+                        d.totalFee().toPlainString(),
+                        d.selfFee().toPlainString(),
+                        d.otherFee().toPlainString()
+                );
+                total[0] = total[0].add(d.totalFee());
+                total[1] = total[1].add(d.selfFee());
+                total[2] = total[2].add(d.otherFee());
+                p2.table2.add(row);
+            });
+            p2.table2.add(new Page2Table2Row(
+                    "合计",
+                    total[0].toPlainString(),
+                    total[1].toPlainString(),
+                    total[2].toPlainString()
+            ));
+        }
         data.page2 = p2;
+    }
+
+    private void getPage3Data(ExportData data, String tenantId, LocalDate startTime, LocalDate endTime) {
+        var stationDetailData = databaseMapper.getStationDetailData(startTime, endTime);
+        var stationClrDetailData = databaseMapper.getStationClrDetailData(startTime, endTime).stream()
+                .collect(Collectors.groupingBy(
+                        StationClrDetailData::stationId,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+        data.page3 = stationDetailData.stream().map(d -> {
+            var p3 = new Page3Data();
+            p3.operatorName = data.page1.operatorName;
+            p3.period = data.page1.period;
+            p3.stationCode = d.id();
+            p3.stationName = d.name();
+            p3.chargeRule = d.parkFee();
+            p3.table1 = List.of(
+                    new Page3Table1Row(
+                            d.origElecFee().toPlainString(),
+                            d.origServFee().toPlainString(),
+                            d.origTmoutFee().toPlainString(),
+                            d.origElecFee().add(d.origServFee()).add(d.origTmoutFee()).toPlainString()
+                    ),
+                    new Page3Table1Row(
+                            d.dcElecFee().toPlainString(),
+                            d.dcServeFee().toPlainString(),
+                            d.dcTmoutFee().toPlainString(),
+                            d.dcElecFee().add(d.dcServeFee()).add(d.dcTmoutFee()).toPlainString()
+                    ),
+                    new Page3Table1Row(
+                            d.handlElecFee().toPlainString(),
+                            d.handlServFee().toPlainString(),
+                            d.handlTmoutFee().toPlainString(),
+                            d.handlElecFee().add(d.handlServFee()).add(d.handlTmoutFee()).toPlainString()
+                    ),
+                    new Page3Table1Row(),
+                    new Page3Table1Row(),
+                    new Page3Table1Row(
+                            d.elecFee().toPlainString(),
+                            d.servFee().toPlainString(),
+                            d.tmoutFee().toPlainString(),
+                            d.elecFee().add(d.servFee()).add(d.tmoutFee()).toPlainString()
+                    )
+            );
+            var clrDetails = stationClrDetailData.getOrDefault(d.id(), List.of());
+            p3.table2 = List.of(
+                    clrGroup("电费", clrDetails, StationClrDetailData::elecRate, StationClrDetailData::elecFee),
+                    clrGroup("服务费", clrDetails, StationClrDetailData::servRate, StationClrDetailData::servFee),
+                    clrGroup("占位费", clrDetails, StationClrDetailData::tmoutRate, StationClrDetailData::tmoutFee)
+            );
+            p3.totalIncome = d.elecFee().add(d.servFee()).add(d.tmoutFee()).toPlainString();
+
+            return p3;
+        }).toList();
+    }
+
+    /**
+     * 一个费用项目的清分组：可分配净额 = 该站各清分方收入之和；每个清分方一行（名称/比例/收入）。
+     */
+    private Page3Table2Group clrGroup(String item, List<StationClrDetailData> details,
+                                      Function<StationClrDetailData, BigDecimal> rate,
+                                      Function<StationClrDetailData, BigDecimal> income) {
+        int n = details.size();
+        var partyArr = new String[n];
+        var ratioArr = new String[n];
+        var incomeArr = new String[n];
+        var clrAmount = BigDecimal.ZERO;
+        for (int i = 0; i < n; i++) {
+            var d = details.get(i);
+            partyArr[i] = d.operatorName();
+            ratioArr[i] = rate.apply(d).toPlainString();
+            incomeArr[i] = income.apply(d).toPlainString();
+            clrAmount = clrAmount.add(income.apply(d));
+        }
+        return new Page3Table2Group(item, clrAmount.toPlainString(), partyArr, ratioArr, incomeArr);
     }
 
     private void getPage4Data(ExportData data, String tenantId, LocalDate startTime, LocalDate endTime) {
