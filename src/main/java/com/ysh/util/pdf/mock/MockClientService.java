@@ -1,8 +1,8 @@
 package com.ysh.util.pdf.mock;
 
 import tools.jackson.databind.ObjectMapper;
-import com.ysh.util.pdf.dto.ExportData;
-import com.ysh.util.pdf.service.SettlementExportService;
+import com.ysh.util.pdf.dto.reconciliation.ExportData;
+import com.ysh.util.pdf.service.ReconciliationExportService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,10 +12,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class MockClientService {
 
-    private final SettlementExportService settlementExportService;
+    private final ReconciliationExportService settlementExportService;
     private final ObjectMapper objectMapper;
 
-    public MockClientService(SettlementExportService settlementExportService, ObjectMapper objectMapper) {
+    public MockClientService(ReconciliationExportService settlementExportService, ObjectMapper objectMapper) {
         this.settlementExportService = settlementExportService;
         this.objectMapper = objectMapper;
     }

@@ -1,6 +1,10 @@
 package com.ysh.util.pdf.mapper;
 
 import com.ysh.util.pdf.dto.*;
+import com.ysh.util.pdf.dto.settlement.TaiNengOperatorInfo;
+import com.ysh.util.pdf.dto.settlement.TaiNengStationFeeCfgData;
+import com.ysh.util.pdf.dto.settlement.TaiNengStationPayData;
+import com.ysh.util.pdf.dto.settlement.TaiNengStationTradeData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -12,60 +16,60 @@ import java.util.List;
 @Mapper
 public interface DatabaseMapper {
     @Select("""
-            SELECT "tb".TENANTOPERATORID AS tenantOperatorId, "tb".TENANTOPERATORNAME AS tenantOperatorName, "tb".TENANTOPERATORLONGNAME AS tenantOperatorLongName,
-                   "td".BANKACCNAME AS bankAccName, "td".BANKLONGNAME AS bankLongName, "td".BANKCARDNO AS bankCardNo
-            FROM TBTENANT_OPERATOR AS tb
-            LEFT JOIN TBTENANT_DISTRCFG AS td ON tb.TENANTOPERATORID = td.OPERATORID
-            WHERE "tb".TENANTOPERATORID = #{tenantId};
+            SELECT TENANTOPERATORID       AS tenantOperatorId,
+                   TENANTOPERATORNAME     AS tenantOperatorName,
+                   TENANTOPERATORLONGNAME AS tenantOperatorLongName,
+                   BANKACCNAME            AS bankAccName,
+                   BANKLONGNAME           AS bankLongName,
+                   BANKCARDNO             AS bankCardNo
+            FROM TBTENANT_OPERATOR tb
+                     LEFT JOIN TBTENANT_DISTRCFG td ON tb.TENANTOPERATORID = td.OPERATORID
+            WHERE tb.TENANTOPERATORID = #{tenantId};
             """)
     TenantInformation getTenantInformation(String tenantId);
 
     @Select("""
-            SELECT
-              SUM(TOTALELECMONEY) AS totalElecMoney,
-              SUM(TOTALSEVICEMONEY) AS totalSeviceMoney,
-              SUM(TOTALTIMEOUTMONEY) AS totalTimeoutMoney,
-              SUM(DISTRELECFEE) AS distrElecFee,
-              SUM(DISTRSERVFEE) AS distrServFee,
-              SUM(DISTRTIMEOUTFEE) AS distrTimeoutFee
-            FROM
-              TBEVI_TRADE_DISTR_SUM AS ttds
-            WHERE
-              ttds.OPERATORID = #{tenantId}
-              AND ttds.STATTIME >= #{startTime} AND ttds.STATTIME < #{endTime};
+            SELECT SUM(TOTALELECMONEY)    AS totalElecMoney,
+                   SUM(TOTALSEVICEMONEY)  AS totalSeviceMoney,
+                   SUM(TOTALTIMEOUTMONEY) AS totalTimeoutMoney,
+                   SUM(DISTRELECFEE)      AS distrElecFee,
+                   SUM(DISTRSERVFEE)      AS distrServFee,
+                   SUM(DISTRTIMEOUTFEE)   AS distrTimeoutFee
+            FROM TBEVI_TRADE_DISTR_SUM AS ttds
+            WHERE ttds.OPERATORID = #{tenantId}
+            AND ttds.STATTIME >= #{startTime} AND ttds.STATTIME < #{endTime};
             """)
     TenantClrData getTenantClrData(@Param("tenantId") String tenantId,
                                    @Param("startTime") LocalDateTime startTime,
                                    @Param("endTime") LocalDateTime endTime);
 
     @Select("""
-            SELECT
-              CONCAT(ts.STATIONNAME, ' / ', ts.STATIONID) AS name,
-              SUM(DISTRELECFEE) AS clrElecFee,
-              SUM(DISTRSERVFEE) AS clrServFee,
-              SUM(DISTRTIMEOUTFEE) AS clrTmoutFee
-            FROM
-              TBEVI_TRADE_DISTR AS ttd
-              LEFT JOIN TBEVI_TRADE AS tt ON ttd.ORDERNO = tt.ORDERNO
-              LEFT JOIN TBEVI_CONNECTOR AS tc ON TT.CONNECTORID = tc.CONNECTORID
-              LEFT JOIN TBEVI_STATION AS ts ON tc.STATIONID = TS.STATIONID
-              WHERE ttd.SVROPERID = #{tenantId}
-              AND ttd.STATTIME >= #{startTime} AND ttd.STATTIME < #{endTime}
-              GROUP BY ts.STATIONID
+            SELECT CONCAT(ts.STATIONNAME, ' / ', ts.STATIONID) AS name,
+                   SUM(DISTRELECFEE)                           AS clrElecFee,
+                   SUM(DISTRSERVFEE)                           AS clrServFee,
+                   SUM(DISTRTIMEOUTFEE)                        AS clrTmoutFee
+            FROM TBEVI_TRADE_DISTR AS ttd
+                          LEFT JOIN TBEVI_TRADE AS tt
+            ON ttd.ORDERNO = tt.ORDERNO
+                LEFT JOIN TBEVI_CONNECTOR AS tc ON TT.CONNECTORID = tc.CONNECTORID
+                LEFT JOIN TBEVI_STATION AS ts ON tc.STATIONID = TS.STATIONID
+            WHERE ttd.SVROPERID = #{tenantId}
+                          AND ttd.STATTIME >= #{startTime} AND ttd.STATTIME < #{endTime}
+            GROUP BY ts.STATIONID
             """)
     List<StationClrData> getStationClrData(@Param("tenantId") String tenantId,
                                            @Param("startTime") LocalDate startTime,
                                            @Param("endTime") LocalDate endTime);
 
     @Select("""
-            SELECT
-                CONCAT(s.STATIONNAME, ' / ', s.STATIONID) AS name,
-                SUM(IF(td.SVROPERID = #{tenantId}, td.DISTRELECFEE + td.DISTRSERVFEE + td.DISTRTIMEOUTFEE, 0)) AS selfFee,
-                SUM(IF(td.SVROPERID != #{tenantId}, td.DISTRELECFEE + td.DISTRSERVFEE + td.DISTRTIMEOUTFEE, 0)) AS otherFee
+            SELECT s.STATIONID                                                                                     AS id,
+                   CONCAT(s.STATIONNAME, ' / ', s.STATIONID)                                                       AS name,
+                   SUM(IF(td.SVROPERID = #{tenantId}, td.DISTRELECFEE + td.DISTRSERVFEE + td.DISTRTIMEOUTFEE, 0))  AS selfFee,
+                   SUM(IF(td.SVROPERID != #{tenantId}, td.DISTRELECFEE + td.DISTRSERVFEE + td.DISTRTIMEOUTFEE, 0)) AS otherFee
             FROM TBEVI_TRADE_DISTR td
-            LEFT JOIN TBEVI_TRADE t ON td.ORDERNO = t.ORDERNO
-            LEFT JOIN TBEVI_CONNECTOR c ON t.CONNECTORID = c.CONNECTORID
-            LEFT JOIN TBEVI_STATION s ON c.STATIONID = s.STATIONID
+                     LEFT JOIN TBEVI_TRADE t ON td.ORDERNO = t.ORDERNO
+                     LEFT JOIN TBEVI_CONNECTOR c ON t.CONNECTORID = c.CONNECTORID
+                     LEFT JOIN TBEVI_STATION s ON c.STATIONID = s.STATIONID
             WHERE td.STATTIME >= #{startTime} AND  td.STATTIME < #{endTime}
             GROUP BY s.STATIONID
             """)
@@ -122,24 +126,24 @@ public interface DatabaseMapper {
     List<StationClrDetailData> getStationClrDetailData(@Param("startTime") LocalDate startTime, @Param("endTime") LocalDate endTime);
 
     @Select("""
-            SELECT
-                NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALELECMONEY END), 0) AS normalElecMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALSEVICEMONEY END), 0) AS normalServMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALTMOUTMONEY END), 0) AS normalTmoutMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALPOWER END), 0) AS normalPower,
-                COUNT(CASE WHEN e.TYPE = 0 THEN 1 END) AS normalCount,
-                NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALELECMONEY END), 0) AS operatorElecMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALSEVICEMONEY END), 0) AS operatorServMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALTMOUTMONEY END), 0) AS operatorTmoutMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALPOWER END), 0) AS operatorPower,
-                COUNT(CASE WHEN e.TYPE = 1 THEN 1 END) AS operatorCount,
-                NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALELECMONEY END), 0) AS tedaElecMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALSEVICEMONEY END), 0) AS tedaServMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALTMOUTMONEY END), 0) AS tedaTmoutMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALPOWER END), 0) AS tedaPower,
-                COUNT(CASE WHEN e.TYPE = 2 THEN 1 END) AS tedaCount
-            FROM (SELECT * FROM PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE
-                           WHERE PUSHTIMESTAMP >= #{startTime} AND PUSHTIMESTAMP < #{endTime}) pt
+            SELECT NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALELECMONEY END), 0)   AS normalElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALSEVICEMONEY END), 0) AS normalServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALTMOUTMONEY END), 0)  AS normalTmoutMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALPOWER END), 0)       AS normalPower,
+                   COUNT(CASE WHEN e.TYPE = 0 THEN 1 END)                         AS normalCount,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALELECMONEY END), 0)   AS operatorElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALSEVICEMONEY END), 0) AS operatorServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALTMOUTMONEY END), 0)  AS operatorTmoutMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALPOWER END), 0)       AS operatorPower,
+                   COUNT(CASE WHEN e.TYPE = 1 THEN 1 END)                         AS operatorCount,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALELECMONEY END), 0)   AS tedaElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALSEVICEMONEY END), 0) AS tedaServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALTMOUTMONEY END), 0)  AS tedaTmoutMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALPOWER END), 0)       AS tedaPower,
+                   COUNT(CASE WHEN e.TYPE = 2 THEN 1 END)                         AS tedaCount
+            FROM (SELECT *
+                  FROM PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE
+                  WHERE PUSHTIMESTAMP >= #{startTime} AND PUSHTIMESTAMP < #{endTime}) pt
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBUSER u ON pt.USERNUM = u.USERNUM
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_USER_RELA vur ON u.USERNUM = vur.USERNUM
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_ENT e ON vur.VIPGRPID = e.ENTID
@@ -147,19 +151,19 @@ public interface DatabaseMapper {
     EntIncomeData getEntIncomeData(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 
     @Select("""
-            SELECT
-                CONCAT(s.STATIONNAME,' / ', s.STATIONID) AS name,
-                NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALELECMONEY END), 0) AS normalElecMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALSEVICEMONEY END), 0) AS normalServMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALTMOUTMONEY END), 0) AS normalTmoutMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALELECMONEY END), 0) AS operatorElecMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALSEVICEMONEY END), 0) AS operatorServMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALTMOUTMONEY END), 0) AS operatorTmoutMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALELECMONEY END), 0) AS tedaElecMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALSEVICEMONEY END), 0) AS tedaServMoney,
-                NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALTMOUTMONEY END), 0) AS tedaTmoutMoney
-            FROM (SELECT * FROM PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE
-                           WHERE PUSHTIMESTAMP >= #{startTime} AND PUSHTIMESTAMP < #{endTime}) pt
+            SELECT CONCAT(s.STATIONNAME, ' / ', s.STATIONID)                      AS name,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALELECMONEY END), 0)   AS normalElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALSEVICEMONEY END), 0) AS normalServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALTMOUTMONEY END), 0)  AS normalTmoutMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALELECMONEY END), 0)   AS operatorElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALSEVICEMONEY END), 0) AS operatorServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALTMOUTMONEY END), 0)  AS operatorTmoutMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALELECMONEY END), 0)   AS tedaElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALSEVICEMONEY END), 0) AS tedaServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALTMOUTMONEY END), 0)  AS tedaTmoutMoney
+            FROM (SELECT *
+                  FROM PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE
+                  WHERE PUSHTIMESTAMP >= #{startTime} AND PUSHTIMESTAMP < #{endTime}) pt
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBUSER u ON pt.USERNUM = u.USERNUM
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_USER_RELA vur ON u.USERNUM = vur.USERNUM
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_ENT e ON vur.VIPGRPID = e.ENTID
@@ -168,4 +172,82 @@ public interface DatabaseMapper {
             GROUP BY pt.STATIONID;
             """)
     List<StationEntIncomeData> getStationEntIncomeData(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    // ==================== 泰能充月度结算单 ====================
+
+    @Select("""
+            SELECT NVL(TENANTOPERATORLONGNAME, TENANTOPERATORNAME) AS operatorName,
+                   TENANTUNIFIEDCODE                               AS creditCode,
+                   TENANTOPERATORREGADDRESS                        AS address,
+                   CONTACTSUSER1                                   AS contact,
+                   TENANTOPERATORTEL1                              AS phone
+            FROM TBTENANT_OPERATOR
+            WHERE TENANTOPERATORID = #{tenantId};
+            """)
+    TaiNengOperatorInfo getTaiNengOperatorInfo(@Param("tenantId") String tenantId);
+
+    @Select("""
+            SELECT pt.STATIONID                                                       AS stationId,
+                   FIRST_VALUE(s.STATIONNAME)                                         AS stationName,
+                   FIRST_VALUE(s.ADDRESS)                                             AS stationAddress,
+                   SUM(pt.TOTALPOWER)                                                 AS monthPower,
+                   SUM(pt.TOTALELECMONEY)                                             AS monthElecMoney,
+                   SUM(pt.TOTALSEVICEMONEY)                                           AS monthServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALPOWER END), 0)           AS normalPower,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALELECMONEY END), 0)       AS normalElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALSEVICEMONEY END), 0)     AS normalServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALPOWER END), 0)           AS operatorPower,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALELECMONEY END), 0)       AS operatorElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALSEVICEMONEY END), 0)     AS operatorServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALPOWER END), 0)           AS tedaPower,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALELECMONEY END), 0)       AS tedaElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALSEVICEMONEY END), 0)     AS tedaServMoney
+            FROM PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE pt
+                     LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBUSER u ON pt.USERNUM = u.USERNUM
+                     LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_USER_RELA vur ON u.USERNUM = vur.USERNUM
+                     LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_ENT e ON vur.VIPGRPID = e.ENTID
+                     LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_STATION s ON pt.STATIONID = s.STATIONID
+            WHERE pt.PUSHTIMESTAMP >= #{startTime} AND pt.PUSHTIMESTAMP < #{endTime}
+            GROUP BY pt.STATIONID
+            ORDER BY pt.STATIONID
+            """)
+    List<TaiNengStationTradeData> getTaiNengStationTradeData(@Param("startTime") LocalDateTime startTime,
+                                                             @Param("endTime") LocalDateTime endTime);
+
+    @Select("""
+            SELECT pt.STATIONID                                                                  AS stationId,
+                   NVL(SUM(CASE WHEN br.PAYCHANNEL = 'wxpaym' THEN br.CASHAMOUNT END), 0)        AS wechatPayTotal,
+                   NVL(SUM(CASE WHEN br.PAYCHANNEL = 'alipaym' THEN br.CASHAMOUNT END), 0)       AS alipayPayTotal
+            FROM PWR_ORDERLY_MNGR_TEDA.TBUSER_BALANCE_REC br
+                     INNER JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE pt ON br.PAYOUTERNUM = pt.ORDERNO
+            WHERE br.CASHTRADETYPE = 3
+              AND br.CASHTIME >= #{startTime} AND br.CASHTIME < #{endTime}
+            GROUP BY pt.STATIONID
+            """)
+    List<TaiNengStationPayData> getTaiNengStationPayData(@Param("startTime") LocalDateTime startTime,
+                                                         @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 各站点生效的平台手续费清分配置（DISTRTYPE = 11）：
+     * 站点 → 清分组（TBEVI_TRADE_DISTR_STAGRP_RELA）→ 组内 DISTRTYPE=11、ISVALID=1
+     * 且有效期覆盖结算期的配置；多条重叠时取 CFGSTARTTIME 最新一条。
+     */
+    @Select("""
+            SELECT t.stationId    AS stationId,
+                   t.distrRateCfg AS distrRateCfg
+            FROM (SELECT r.STATIONID    AS stationId,
+                         c.DISTRRATECFG AS distrRateCfg,
+                         ROW_NUMBER() OVER (PARTITION BY r.STATIONID ORDER BY c.CFGSTARTTIME DESC) AS rn
+                  FROM TBEVI_TRADE_DISTR_STAGRP_RELA r
+                           INNER JOIN TBEVI_TRADE_DISTR_GRP_CFG c
+                               ON c.DISTRSTAGROUPID = r.DISTRSTAGROUPID
+                  WHERE c.DISTRTYPE = 11
+                    AND c.ISVALID = 1
+                    AND c.CFGSTARTTIME < #{endTime}
+                    AND c.CFGENDTIME >= #{startTime}
+                 ) t
+            WHERE t.rn = 1
+            """)
+    List<TaiNengStationFeeCfgData> getTaiNengStationFeeCfgData(@Param("startTime") LocalDateTime startTime,
+                                                               @Param("endTime") LocalDateTime endTime);
 }
