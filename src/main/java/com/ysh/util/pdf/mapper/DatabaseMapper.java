@@ -1,10 +1,10 @@
 package com.ysh.util.pdf.mapper;
 
 import com.ysh.util.pdf.dto.*;
-import com.ysh.util.pdf.dto.settlement.TaiNengOperatorInfo;
-import com.ysh.util.pdf.dto.settlement.TaiNengStationFeeCfgData;
-import com.ysh.util.pdf.dto.settlement.TaiNengStationPayData;
-import com.ysh.util.pdf.dto.settlement.TaiNengStationTradeData;
+import com.ysh.util.pdf.dto.TaiNengOperatorInfo;
+import com.ysh.util.pdf.dto.TaiNengStationFeeCfgData;
+import com.ysh.util.pdf.dto.TaiNengStationPayData;
+import com.ysh.util.pdf.dto.TaiNengStationTradeData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
