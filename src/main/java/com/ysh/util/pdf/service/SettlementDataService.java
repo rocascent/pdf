@@ -93,13 +93,6 @@ public class SettlementDataService {
             s.tedaElecFee = fmt(t.tedaElecMoney());
             s.tedaServFee = fmt(t.tedaServMoney());
 
-            s.wechatPayTotal = fmt(pay.wechatPayTotal());
-            s.wechatFeeRate = rateText();
-            s.wechatFee = fmt(fee(pay.wechatPayTotal()));
-            s.alipayPayTotal = fmt(pay.alipayPayTotal());
-            s.alipayFeeRate = rateText();
-            s.alipayFee = fmt(fee(pay.alipayPayTotal()));
-
             // 平台手续费模式/固定金额/费率：取该电站清分配置中 DISTRTYPE=11 的配置；
             // 无配置（或配置无法解析）时相关字段均留空，平台手续费/可提现也无法计算，同样留空
             var monthIncome = nvl(t.monthElecMoney()).add(nvl(t.monthServMoney()));
@@ -132,7 +125,6 @@ public class SettlementDataService {
         p1.creditCode = info == null ? null : info.creditCode();
         p1.address = info == null ? null : info.address();
         p1.contact = info == null ? null : info.contact();
-        p1.phone = info == null ? null : info.phone();
 
         p1.settleYear = String.valueOf(startTime.getYear());
         p1.settleMonth = String.format("%02d", startTime.getMonthValue());

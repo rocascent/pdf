@@ -14,9 +14,10 @@ public class Page1Data {
 
     // 表1 运营商信息
     public String creditCode;        // 统一社会信用代码
+    public String bank;              // 开户行
+    public String account;           // 账号
     public String address;           // 企业地址
     public String contact;           // 联系人
-    public String phone;             // 联系电话
 
     // 表2 合计信息
     public String totalCharge;       // 总充电量（kWh）

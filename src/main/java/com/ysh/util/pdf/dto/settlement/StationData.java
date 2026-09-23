@@ -20,12 +20,6 @@ public class StationData {
     public String tedaCharge;        // 泰达电力机构充电量（kWh）
     public String tedaElecFee;       // 泰达电力机构充电电费（元）
     public String tedaServFee;       // 泰达电力机构充电服务费（元）
-    public String wechatPayTotal;    // 微信付款小计（元）
-    public String wechatFeeRate;     // 微信手续费率
-    public String wechatFee;         // 微信手续费（元）
-    public String alipayPayTotal;    // 支付宝付款小计（元）
-    public String alipayFeeRate;     // 支付宝手续费率
-    public String alipayFee;         // 支付宝手续费（元）
     public String platformFee;       // 平台手续费（元）
     public String withdrawable;      // 可提现费用（元）
 }
