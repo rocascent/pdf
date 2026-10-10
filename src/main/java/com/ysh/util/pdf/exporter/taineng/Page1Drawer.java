@@ -59,7 +59,7 @@ final class Page1Drawer {
             rowTop -= rowH[i];
         }
 
-        // ==================== 二、合计信息（18 行，可跨页；首段带表头，续页无表头无页眉） ====================
+        // ==================== 二、合计信息（20 行，可跨页；首段带表头，续页无表头无页眉） ====================
         final float T2_ROW = 28f;
         drawText(cv, bold, L, 486f, "二、合计信息", FS_SEC);
         float[] xs2 = {L, 233f, 350f, R};
@@ -70,19 +70,22 @@ final class Page1Drawer {
                 "运营商机构充电量（kWh）", "运营商机构充电电费（元）", "运营商机构充电服务费（元）",
                 "泰达电力机构充电量（kWh）", "泰达电力机构充电电费（元）", "泰达电力机构充电服务费（元）",
                 "微信付款合计（元）", "微信手续费（元）", "支付宝付款合计（元）",
-                "支付宝手续费（元）", "平台手续费（元）", "总计可提现费用（元）"};
+                "支付宝手续费（元）", "总计付款手续费（元）", "该运营商承担付款手续费（元）",
+                "平台手续费（元）", "总计可提现费用（元）"};
         String[] values2 = {p.totalCharge, p.totalElecFee, p.totalServFee,
                 p.normalCharge, p.normalElecFee, p.normalServFee,
                 p.operatorCharge, p.operatorElecFee, p.operatorServFee,
                 p.tedaCharge, p.tedaElecFee, p.tedaServFee,
                 p.wechatPayTotal, p.wechatFee, p.alipayPayTotal,
-                p.alipayFee, p.platformFee, p.totalWithdrawable};
+                p.alipayFee, p.totalPayFee, p.operatorPayFee,
+                p.platformFee, p.totalWithdrawable};
         String[] notes2 = {"普通用户充电电量合计", "普通用户充电电费合计", "普通用户充电服务费合计",
                 "普通机构充电电量合计", "普通机构充电电费合计", "普通机构充电服务费合计",
                 "运营商机构充电电量合计", "运营商机构充电电费合计", "运营商机构充电服务费合计",
                 "泰达电力机构充电电量合计", "泰达电力机构充电电费合计", "泰达电力机构充电服务费合计",
                 "普通用户微信付款合计", "普通用户微信手续费之和", "普通用户支付宝付款之和",
-                "普通用户支付宝手续费之和", "平台手续费之和", "可提现费用合计"};
+                "普通用户支付宝手续费之和", "微信手续费+支付宝手续费", "扣掉平台费后应承担手续费金额",
+                "平台手续费之和", "可提现费用合计"};
         int n2 = labels2.length;
 
         float curTop = 461f;   // 表顶（节标题 486 下方 25）

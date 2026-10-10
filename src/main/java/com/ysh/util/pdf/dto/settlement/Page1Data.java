@@ -36,6 +36,8 @@ public class Page1Data {
     public String wechatFee;         // 微信手续费（元）
     public String alipayPayTotal;    // 支付宝付款合计（元）
     public String alipayFee;         // 支付宝手续费（元）
+    public String totalPayFee;       // 总计付款手续费（元）＝微信手续费＋支付宝手续费
+    public String operatorPayFee;    // 该运营商承担付款手续费（元）＝扣掉平台费后应承担手续费金额
     public String platformFee;       // 平台手续费（元）
     public String totalWithdrawable; // 总计可提现费用（元）
 }

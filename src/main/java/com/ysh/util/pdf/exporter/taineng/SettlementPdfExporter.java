@@ -22,7 +22,7 @@ import java.util.List;
  *   页 2    ：合计信息续 6 行（无页眉无节标题）；
  *   页 3..N ：各充电站清单（StationDrawer），
  *             第 1 个站点标题"三、各充电站清单"，第 2 个起加"（续）"，
- *             站点空间足够时接续上一页，末行"可提现费用"单独续页；
+ *             每站新页，末行"可提现费用"单独续页；
  *   节标题用黑体 simhei.ttf，大标题/正文/表头用思源宋体（模板实测 SimSun）。
  */
 public class SettlementPdfExporter {
@@ -55,11 +55,9 @@ public class SettlementPdfExporter {
             PdfFont bold = newBoldFont();
 
             Page1Drawer.draw(pdf, font, bold, p1);
-            float prevBottom = 0;
             for (int i = 0; i < stations.size(); i++) {
-                // 第 1 个站点强制新页，之后空间足够时接续上一页（避免整页空白）
-                prevBottom = StationDrawer.draw(pdf, font, bold, p1,
-                        stations.get(i), i + 1, prevBottom, i == 0);
+                // 每站新页，节标题顶头
+                StationDrawer.draw(pdf, font, bold, stations.get(i), i + 1);
             }
             // 页码统一回填（总页数此时才确定）
             PdfDrawer.drawPageNos(pdf, font);

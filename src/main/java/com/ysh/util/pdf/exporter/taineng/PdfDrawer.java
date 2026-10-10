@@ -37,7 +37,6 @@ final class PdfDrawer {
     static final float CELL_PAD = 8f;        // 单元格左右内边距（折行可用宽度 = 列宽 - PAD）
     static final float DROP = 4f;            // 基线在行内的下移量（模板实测反推：top - h/2 - DROP = baseline）
     static final float MIN_Y = 80f;          // 表格底线最低允许值（低于则换页）
-    static final float TITLE_BLOCK = 41f;    // 站点接续标题块：上一个内容底线 → 新表格顶线（节标题 16 + 顶差 25）
     static final float CONT_TOP = 770f;      // 续页表格顶线（模板实测）
 
     // 颜色（模板实测：全黑，无灰底）

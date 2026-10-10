@@ -3,6 +3,12 @@ build/
 .idea/
 .vscode/
 
+# 编译输出（class 及拷贝的资源）
+bin/
+*.class
+
+
+
 # macOS
 .DS_Store
 ._*

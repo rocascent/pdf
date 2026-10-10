@@ -6,7 +6,6 @@ import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 
-import com.ysh.util.pdf.dto.settlement.Page1Data;
 import com.ysh.util.pdf.dto.settlement.StationData;
 
 import static com.ysh.util.pdf.exporter.taineng.PdfDrawer.*;
@@ -51,15 +50,12 @@ final class StationDrawer {
     }
 
     /**
-     * 画一个站点（每站最多 1 页起始，可跨页）。
+     * 画一个站点（每站固定 1 页起始，站内行数多可跨页续写）。
      *
-     * @param prevBottom   上一个内容画到的底线（本站之前），0 表示无
-     * @param forceNewPage 强制从新页开始（第 1 个站点），否则空间足够时接续上一页
-     * @return 本站画完后当前页内容底线，供下一站点接续判断
+     * @param idx 站点序号（从 1 起），决定节标题是否带"（续）"
      */
-    static float draw(PdfDocument pdf, PdfFont font, PdfFont bold,
-                      Page1Data p1, StationData s, int idx,
-                      float prevBottom, boolean forceNewPage) {
+    static void draw(PdfDocument pdf, PdfFont font, PdfFont bold,
+                     StationData s, int idx) {
         if (s == null) s = new StationData();
         String secTitle = idx == 1 ? "三、各充电站清单" : "三、各充电站清单（续）";
 
@@ -89,27 +85,15 @@ final class StationDrawer {
 
         PdfCanvas cv;
         float curTop;
-        // 接续条件：上一内容下方剩余空间能放下 标题块 + 表头 + 2 行
-        boolean samePage = !forceNewPage
-                && prevBottom - MIN_Y >= TITLE_BLOCK + STA_HEAD + 2 * STA_ROW;
-        if (!samePage) {
-            // 新页：页眉 + 节标题在模板固定位置
-            PdfPage page = pdf.addNewPage(new PageSize(PAGE_W, PAGE_H));
-            cv = new PdfCanvas(page);
-            drawHeader(cv, font, bold, p1);
-            drawFooter(cv, font);
-            drawText(cv, bold, L, 674.5f, secTitle, FS_SEC);
-            curTop = 649f;
-        } else {
-            // 接续上一页：节标题画在上一个内容下方
-            cv = new PdfCanvas(pdf.getLastPage());
-            drawText(cv, bold, L, prevBottom - 16f, secTitle, FS_SEC);
-            curTop = prevBottom - TITLE_BLOCK;
-        }
+        // 每站新页：无页眉（大标题/导出时间仅首页有），节标题顶头
+        PdfPage page = pdf.addNewPage(new PageSize(PAGE_W, PAGE_H));
+        cv = new PdfCanvas(page);
+        drawFooter(cv, font);
+        drawText(cv, bold, L, TITLE_Y, secTitle, FS_SEC);
+        curTop = TITLE_Y - 25.5f;
 
         // 分段画（跨页；首段带表头，续页无表头无页眉）
         int segStart = 0, segIdx = 0;
-        float segBottom = 0;
         while (segStart < n) {
             // 找当前页能放下的行数（首段带表头，续页无表头）
             float headH = (segIdx == 0) ? STA_HEAD : 0f;
@@ -127,8 +111,7 @@ final class StationDrawer {
             float t = curTop - headH;
             ry[0] = t;
             for (int j = segStart; j < segEnd; j++) { t -= rowH[j]; ry[j - segStart + 1] = t; }
-            segBottom = t;
-            drawTable(cv, xs, curTop, segBottom, ry);
+            drawTable(cv, xs, curTop, t, ry);
 
             // 表头文本（首段，黑体加粗）
             if (segIdx == 0) {
@@ -159,7 +142,5 @@ final class StationDrawer {
             segStart = segEnd;
             segIdx++;
         }
-        // 返回当前页内容底线，供下一站点接续判断
-        return segBottom;
     }
 }
