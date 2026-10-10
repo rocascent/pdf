@@ -51,7 +51,7 @@ public class SettlementController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename*=UTF-8''" + encoded)
+                        "inline; filename*=UTF-8''" + encoded)
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(stream -> exportService.exportStream(data, stream));
     }

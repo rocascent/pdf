@@ -3,16 +3,11 @@ package com.ysh.util.pdf.dto;
 import java.math.BigDecimal;
 
 /**
- * 泰能充结算单单站点交易汇总（来自 TBPUB_TRADE，按站点分组）。
- * normal/operator/teda 三列机构口径与 EntIncomeData 一致（TYPE 0/1/2）。
+ * 泰能充结算单单站点普通/运营商/泰达机构拆分（来自 PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE，
+ * 机构口径与 EntIncomeData 一致：TBPUB_VIPGRP_ENT.TYPE 0/1/2）。
  */
 public record TaiNengStationTradeData(
-        String stationId,
-        String stationName,
-        String stationAddress,
-        BigDecimal monthPower,        // 月充电量（全部用户）
-        BigDecimal monthElecMoney,    // 月充电电费（全部用户）
-        BigDecimal monthServMoney,    // 月充电服务费（全部用户）
+        String stationId,             // 带运营商前缀（如 104313271_101010141）
         BigDecimal normalPower,       // 普通机构充电量
         BigDecimal normalElecMoney,   // 普通机构充电电费
         BigDecimal normalServMoney,   // 普通机构充电服务费

@@ -1,9 +1,10 @@
 package com.ysh.util.pdf.mapper;
 
 import com.ysh.util.pdf.dto.*;
-import com.ysh.util.pdf.dto.TaiNengOperatorInfo;
+import com.ysh.util.pdf.dto.TaiNengBalanceRecData;
 import com.ysh.util.pdf.dto.TaiNengStationFeeCfgData;
 import com.ysh.util.pdf.dto.TaiNengStationPayData;
+import com.ysh.util.pdf.dto.TaiNengStationStatData;
 import com.ysh.util.pdf.dto.TaiNengStationTradeData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -181,32 +182,70 @@ public interface DatabaseMapper {
                    TENANTOPERATORREGADDRESS                        AS address,
                    CONTACTSUSER1                                   AS contact,
                    TENANTOPERATORTEL1                              AS phone
-            FROM TBTENANT_OPERATOR
+            FROM PWR_EVIDEV_MNGR.TBTENANT_OPERATOR
             WHERE TENANTOPERATORID = #{tenantId};
             """)
     TaiNengOperatorInfo getTaiNengOperatorInfo(@Param("tenantId") String tenantId);
 
+    /**
+     * 各站点清分统计（电站/总览页的月充电量、月充电电费、月充电服务费）：
+     * 取 PWR_EVIDEV_MNGR 清分记录 TBEVI_TRADE_DISTR（SVROPERID=运营商），
+     * 清分电费/服务费为 DISTRELECFEE/DISTRSERVFEE；另取超时费与余额服务扣除费率
+     * （清分配置 BALANCEDEDUCTFEE，按明细 DISTRCFGID 关联，缺省 0.0055）供可提现费用计算。
+     * 同一订单可能按多个清分配置各一行（不同运营商/平台的分成行），
+     * 这里只取清分配置 OPERATORID=当前运营商的行（可提现只算当前运营商的份额）。
+     * 清分明细一单一行，SUM 不会重复。
+     */
     @Select("""
-            SELECT pt.STATIONID                                                       AS stationId,
-                   FIRST_VALUE(s.STATIONNAME)                                         AS stationName,
-                   FIRST_VALUE(s.ADDRESS)                                             AS stationAddress,
-                   SUM(pt.TOTALPOWER)                                                 AS monthPower,
-                   SUM(pt.TOTALELECMONEY)                                             AS monthElecMoney,
-                   SUM(pt.TOTALSEVICEMONEY)                                           AS monthServMoney,
-                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALPOWER END), 0)           AS normalPower,
-                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALELECMONEY END), 0)       AS normalElecMoney,
-                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALSEVICEMONEY END), 0)     AS normalServMoney,
-                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALPOWER END), 0)           AS operatorPower,
-                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALELECMONEY END), 0)       AS operatorElecMoney,
-                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALSEVICEMONEY END), 0)     AS operatorServMoney,
-                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALPOWER END), 0)           AS tedaPower,
-                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALELECMONEY END), 0)       AS tedaElecMoney,
-                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALSEVICEMONEY END), 0)     AS tedaServMoney
+            SELECT s.STATIONID                AS stationId,
+                   FIRST_VALUE(s.STATIONNAME) AS stationName,
+                   FIRST_VALUE(s.ADDRESS)     AS stationAddress,
+                   FIRST_VALUE(s.STATIONTYPE) AS stationType,
+                   SUM(CASE WHEN gc.OPERATORID = #{tenantId} THEN t.TOTALPOWER END)       AS monthPower,
+                   SUM(CASE WHEN gc.OPERATORID = #{tenantId} THEN td.DISTRELECFEE END)    AS monthElecMoney,
+                   SUM(CASE WHEN gc.OPERATORID = #{tenantId} THEN td.DISTRSERVFEE END)    AS monthServMoney,
+                   SUM(CASE WHEN gc.OPERATORID = #{tenantId} THEN td.DISTRTIMEOUTFEE END) AS monthTimeoutFee,
+                   SUM(CASE WHEN gc.DISTRTYPE = 11 THEN td.DISTRSERVFEE END)              AS type11ServMoney,
+                   SUM(CASE WHEN NVL(gc.OPERATORID, ' ') <> #{tenantId}
+                             AND NVL(gc.DISTRTYPE, 0) <> 11 THEN td.DISTRSERVFEE END)     AS otherServMoney,
+                   MAX(CASE WHEN gc.OPERATORID = #{tenantId}
+                            THEN NVL(gc.BALANCEDEDUCTFEE, 0.0055) END)                    AS balanceDeductFee
+            FROM PWR_EVIDEV_MNGR.TBEVI_TRADE_DISTR td
+                     LEFT JOIN PWR_EVIDEV_MNGR.TBEVI_TRADE t ON td.ORDERNO = t.ORDERNO
+                     LEFT JOIN PWR_EVIDEV_MNGR.TBEVI_CONNECTOR c ON t.CONNECTORID = c.CONNECTORID
+                     LEFT JOIN PWR_EVIDEV_MNGR.TBEVI_STATION s ON c.STATIONID = s.STATIONID
+                     LEFT JOIN PWR_EVIDEV_MNGR.TBEVI_TRADE_DISTR_GRP_CFG gc ON td.DISTRCFGID = gc.DISTRCFGID
+            WHERE td.SVROPERID = #{tenantId}
+              AND td.STATTIME >= #{startTime} AND td.STATTIME < #{endTime}
+            GROUP BY s.STATIONID
+            ORDER BY s.STATIONID
+            """)
+    List<TaiNengStationStatData> getTaiNengStationStatData(@Param("tenantId") String tenantId,
+                                                           @Param("startTime") LocalDateTime startTime,
+                                                           @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 各站点普通/运营商/泰达机构拆分（PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE + 机构表）：
+     * 机构口径：TBPUB_VIPGRP_ENT.TYPE，0=普通 1=运营商 2=泰达电力。
+     * 口径约定：PUB 端机构拆分统计时间段内全部订单（不筛是否已清分，
+     * 可经 TBHLHT_STARTCHARGE 桥接：TBEVI_TRADE.ORDERNO=EVIORDERNO，
+     * ORDERNO=TBPUB_TRADE.ORDERNO）；与 EVI 端仅统计清分记录的站点统计并存。
+     */
+    @Select("""
+            SELECT pt.STATIONID                                                     AS stationId,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALPOWER END), 0)         AS normalPower,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALELECMONEY END), 0)     AS normalElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 0 THEN pt.TOTALSEVICEMONEY END), 0)   AS normalServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALPOWER END), 0)         AS operatorPower,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALELECMONEY END), 0)     AS operatorElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 1 THEN pt.TOTALSEVICEMONEY END), 0)   AS operatorServMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALPOWER END), 0)         AS tedaPower,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALELECMONEY END), 0)     AS tedaElecMoney,
+                   NVL(SUM(CASE WHEN e.TYPE = 2 THEN pt.TOTALSEVICEMONEY END), 0)   AS tedaServMoney
             FROM PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE pt
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBUSER u ON pt.USERNUM = u.USERNUM
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_USER_RELA vur ON u.USERNUM = vur.USERNUM
                      LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_VIPGRP_ENT e ON vur.VIPGRPID = e.ENTID
-                     LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_STATION s ON pt.STATIONID = s.STATIONID
             WHERE pt.PUSHTIMESTAMP >= #{startTime} AND pt.PUSHTIMESTAMP < #{endTime}
             GROUP BY pt.STATIONID
             ORDER BY pt.STATIONID
@@ -214,32 +253,45 @@ public interface DatabaseMapper {
     List<TaiNengStationTradeData> getTaiNengStationTradeData(@Param("startTime") LocalDateTime startTime,
                                                              @Param("endTime") LocalDateTime endTime);
 
+    /**
+     * 用户资金流水（仅限结算期内有充电支付的用户，取结算期结束前的全部记录）：
+     * 按用户+时间+流水号升序，供 Java 侧 FIFO 回放计算微信/支付宝付款合计。
+     */
     @Select("""
-            SELECT pt.STATIONID                                                                  AS stationId,
-                   NVL(SUM(CASE WHEN br.PAYCHANNEL = 'wxpaym' THEN br.CASHAMOUNT END), 0)        AS wechatPayTotal,
-                   NVL(SUM(CASE WHEN br.PAYCHANNEL = 'alipaym' THEN br.CASHAMOUNT END), 0)       AS alipayPayTotal
+            SELECT br.USERNUM       AS usernum,
+                   br.CASHID        AS cashId,
+                   br.CASHTRADETYPE AS cashTradeType,
+                   br.PAYCHANNEL    AS payChannel,
+                   br.CASHAMOUNT    AS cashAmount,
+                   br.CASHTIME      AS cashTime,
+                   pt.STATIONID     AS stationId
             FROM PWR_ORDERLY_MNGR_TEDA.TBUSER_BALANCE_REC br
-                     INNER JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE pt ON br.PAYOUTERNUM = pt.ORDERNO
-            WHERE br.CASHTRADETYPE = 3
-              AND br.CASHTIME >= #{startTime} AND br.CASHTIME < #{endTime}
-            GROUP BY pt.STATIONID
+                     LEFT JOIN PWR_ORDERLY_MNGR_TEDA.TBPUB_TRADE pt ON br.PAYOUTERNUM = pt.ORDERNO
+            WHERE br.CASHTIME < #{endTime}
+              AND br.USERNUM IN (SELECT br2.USERNUM
+                                 FROM PWR_ORDERLY_MNGR_TEDA.TBUSER_BALANCE_REC br2
+                                 WHERE br2.CASHTRADETYPE = 3
+                                   AND br2.CASHTIME >= #{startTime}
+                                   AND br2.CASHTIME < #{endTime})
+            ORDER BY br.USERNUM, br.CASHTIME, br.CASHID
             """)
-    List<TaiNengStationPayData> getTaiNengStationPayData(@Param("startTime") LocalDateTime startTime,
-                                                         @Param("endTime") LocalDateTime endTime);
+    List<TaiNengBalanceRecData> getTaiNengBalanceRecs(@Param("startTime") LocalDateTime startTime,
+                                                      @Param("endTime") LocalDateTime endTime);
 
     /**
      * 各站点生效的平台手续费清分配置（DISTRTYPE = 11）：
      * 站点 → 清分组（TBEVI_TRADE_DISTR_STAGRP_RELA）→ 组内 DISTRTYPE=11、ISVALID=1
      * 且有效期覆盖结算期的配置；多条重叠时取 CFGSTARTTIME 最新一条。
+     * 平台服务费 = 清分服务费×DISTRRATESERVFEE + 清分电量×DISTRRATESERVWH。
      */
     @Select("""
             SELECT t.stationId    AS stationId,
-                   t.distrRateCfg AS distrRateCfg
+                   t.servFeeRate  AS distrServFeeRate
             FROM (SELECT r.STATIONID    AS stationId,
-                         c.DISTRRATECFG AS distrRateCfg,
+                         c.DISTRRATESERVFEE AS servFeeRate,
                          ROW_NUMBER() OVER (PARTITION BY r.STATIONID ORDER BY c.CFGSTARTTIME DESC) AS rn
-                  FROM TBEVI_TRADE_DISTR_STAGRP_RELA r
-                           INNER JOIN TBEVI_TRADE_DISTR_GRP_CFG c
+                  FROM PWR_EVIDEV_MNGR.TBEVI_TRADE_DISTR_STAGRP_RELA r
+                           INNER JOIN PWR_EVIDEV_MNGR.TBEVI_TRADE_DISTR_GRP_CFG c
                                ON c.DISTRSTAGROUPID = r.DISTRSTAGROUPID
                   WHERE c.DISTRTYPE = 11
                     AND c.ISVALID = 1
